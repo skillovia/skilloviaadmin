@@ -22,12 +22,14 @@ const AdminHeader = () => {
             Dashboard
           </a>
 
-          <a href="/skills" className="hover:text-primary ">
-  Skills
-          </a>
           <a href="/users" className="hover:text-primary ">
             Users
           </a>
+
+          <a href="/skills" className="hover:text-primary ">
+  Skills
+          </a>
+    
 
 
           <a href="/bookings" className="hover:text-primary ">

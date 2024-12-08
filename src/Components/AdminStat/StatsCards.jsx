@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Users, Calendar, Home, TrendingUp } from 'lucide-react';
 
 const StatsCards = () => {
