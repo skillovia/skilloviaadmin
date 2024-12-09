@@ -9,6 +9,7 @@ import Login from "./Pages/Login/Login";
 import Skills from "./Pages/Skills/Skills";
 import Users from "./Pages/User/Users";
 import Dashboard from "./Pages/Dashboard/Dashboard";
+import UserDetils from "./Pages/User/UserDetils";
 
 
 
@@ -46,6 +47,11 @@ const router = createBrowserRouter([
   {
     path: "/users",
     element: <Users/>,
+  },
+
+  {
+    path: "/user/:id",
+    element: <UserDetils/>,
   },
 
  
