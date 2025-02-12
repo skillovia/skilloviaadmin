@@ -27,10 +27,17 @@ import UserDetils from "./Pages/User/UserDetils";
 const router = createBrowserRouter([
   {
     path: "/",
-    // element: <Login/>,
-    element: <Dashboard/>,
+    element: <Login/>,
+   
   },
   
+  {
+    path: "/login",
+    element: <Login/>,
+
+  },
+  
+
   {
     path: "/dashboard",
     element: <Dashboard/>,
