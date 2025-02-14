@@ -148,10 +148,11 @@ const LoginPage = () => {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen bg-gray-50 md:p-8 p-4 bg-[#f6fceb]">
+    <div className="flex min-h-screen bg-gray-50 md:p-8 p-4 justify-center items-center bg-[#f6fceb]">
       <div className="flex flex-col w-full md:w-1/2 md:p-8">
-        <div className="max-w-md w-full mx-auto">
-          <h2 className="text-3xl font-bold mb-6">Welcome back!</h2>
+        <div className="max-w-md w-full mx-auto ">
+          <h2 className="text-3xl font-bold m tet-center">Admin!</h2>
+          <h2 className="text-3xl font-bold mb-6 ">Welcome back!</h2>
           
           {error && (
             <div className="mb-4 p-3 text-sm text-red-500 bg-red-50 rounded-md">
@@ -197,7 +198,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary text-secondary font-bold py-2 rounded-full hover:bg-green-500 transition-colors focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:outline-none flex items-center justify-center"
+              className="w-full bg-primary text-secondary font-bold py-2 rounded-md hover:bg-green-500 transition-colors focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:outline-none flex items-center justify-center"
             >
               {isLoading ? (
                 <>
