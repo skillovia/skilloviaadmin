@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, MoreVertical, Edit, Trash, Mail, UserPlus, Search, Filter, ChevronDown, Loader } from 'lucide-react';
+import { CheckCircle, XCircle, MoreVertical, Edit, Trash, Mail, UserPlus, Search, Filter, ChevronDown, Loader, X } from 'lucide-react';
 import { LuView } from "react-icons/lu";
 import Layout from '../../Components/Layout/Layout';
 
@@ -9,39 +9,109 @@ const UserTable = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [createUserError, setCreateUserError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    phone: '',
+    email: '',
+    firstname: '',
+    lastname: '',
+    gender: '',
+    password: ''
+  });
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
+    const accessToken = localStorage.getItem('accessToken');
+    
     try {
-      const response = await fetch('https://testapi.humanserve.net/api/admin/all/users');
+      const response = await fetch('https://testapi.humanserve.net/api/admin/users/get/all', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (!response.ok) throw new Error('Failed to fetch users');
-      const data = await response.json();
+      const responseData = await response.json();
       
-      // Transform API data to match table structure
-      const transformedUsers = data.map(user => ({
-        id: user.id,
-        fullName: `${user.firstname} ${user.lastname}`,
-        gender: user.gender || 'Not provided',
-        email: user.email,
-        phoneNumber: user.phone || 'Not provided',
-        state: user.location || 'Not provided',
-        address: user.street || 'Not provided',
-        skills: ['Not provided'], // Since skills aren't in the API, showing placeholder
-        verified: user.is_email_verified === 1,
-        photoUrl: user.photourl || '',
-        bio: user.bio || 'Not provided',
-        createdAt: new Date(user.created_at).toLocaleDateString()
-      }));
-      
-      setUsers(transformedUsers);
+      if (responseData.status === 'success' && responseData.data) {
+        const transformedUsers = responseData.data.map(user => ({
+          id: user.id,
+          fullName: `${user.firstname} ${user.lastname}`,
+          gender: user.gender || 'Not provided',
+          email: user.email,
+          phoneNumber: user.phone || 'Not provided',
+          state: user.location || 'Not provided',
+          address: user.street || 'Not provided',
+          skills: ['Not provided'],
+          verified: user.is_email_verified === 1,
+          photoUrl: user.photourl || '',
+          bio: user.bio || 'Not provided',
+          createdAt: new Date(user.created_at).toLocaleDateString()
+        }));
+        
+        setUsers(transformedUsers);
+      } else {
+        throw new Error('Invalid response format from server');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setCreateUserError(null);
+    setIsSubmitting(true);
+    const accessToken = localStorage.getItem('accessToken');
+
+    try {
+      const response = await fetch('https://testapi.humanserve.net/api/admin/users/create/account', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        setIsModalOpen(false);
+        fetchUsers(); // Refresh the users list
+        setFormData({
+          phone: '',
+          email: '',
+          firstname: '',
+          lastname: '',
+          gender: '',
+          password: ''
+        });
+      } else {
+        throw new Error(data.message || 'Failed to create user');
+      }
+    } catch (err) {
+      setCreateUserError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -98,6 +168,7 @@ const UserTable = () => {
   return (
     <Layout>
       <div className="w-full px-3 lg:px-[8rem]">
+        {/* Header section */}
         <div className="px-4 lg:px-8 py-6">
           <h1 className="text-2xl font-bold text-gray-800">Users Management</h1>
           <p className="text-gray-600 mt-1">View and manage all registered users</p>
@@ -119,11 +190,146 @@ const UserTable = () => {
               Filters
               <ChevronDown className="w-4 h-4" />
             </button>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              <UserPlus className="w-5 h-5" />
               Add User
             </button>
           </div>
         </div>
+
+        {/* Create User Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Create New User</h2>
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    name="firstname"
+                    value={formData.firstname}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="lastname"
+                    value={formData.lastname}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender
+                  </label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {createUserError && (
+                  <div className="text-red-600 text-sm mt-2">
+                    {createUserError}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isSubmitting && <Loader className="w-4 h-4 animate-spin" />}
+                    {isSubmitting ? 'Creating...' : 'Create User'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Users Table */}
         <div className="overflow-x-auto">

@@ -4,6 +4,7 @@ const ServiceTable = () => {
   const [services, setServices] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("published");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -13,15 +14,20 @@ const ServiceTable = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
-  // Fetch existing skills
+  // Fetch skills based on active tab
   const fetchSkills = async () => {
+    setIsFetching(true);
     try {
       const accessToken = localStorage.getItem('accessToken');
       if (!accessToken) {
         throw new Error('No access token found');
       }
 
-      const response = await fetch('https://testapi.humanserve.net/api/admin/skills/get/categories', {
+      const endpoint = activeTab === "published" 
+        ? 'https://testapi.humanserve.net/api/admin/skills/get/published'
+        : 'https://testapi.humanserve.net/api/admin/skills/get/unpublished';
+
+      const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -30,9 +36,15 @@ const ServiceTable = () => {
       });
 
       const data = await response.json();
-
+      console.log('API Response:', data);
+      
       if (data.status === 'success') {
-        setServices(data.data || []);
+        const processedData = (data.data || []).map(item => ({
+          title: item?.title || '',
+          description: item?.description || '',
+          thumbnail: item?.thumbnail || null,
+        }));
+        setServices(processedData);
       } else {
         setError('Failed to fetch skills');
       }
@@ -46,7 +58,7 @@ const ServiceTable = () => {
 
   useEffect(() => {
     fetchSkills();
-  }, []);
+  }, [activeTab]);
 
   const handleAddSkill = async () => {
     setIsLoading(true);
@@ -76,7 +88,7 @@ const ServiceTable = () => {
       const data = await response.json();
 
       if (data.status === 'success') {
-        await fetchSkills(); // Refresh the skills list
+        await fetchSkills();
         setIsModalOpen(false);
         setFormData({ title: "", description: "", thumbnail: null });
       } else {
@@ -99,17 +111,25 @@ const ServiceTable = () => {
   };
 
   const filteredServices = services.filter(service =>
-    service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    service.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (service.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (service.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
-  if (isFetching) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  const TableLoader = () => (
+    <div className="w-full">
+      {[1, 2, 3].map((item) => (
+        <div key={item} className="animate-pulse flex space-x-4 p-4 border-b">
+          <div className="flex-1 space-y-4 py-1">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+          <div className="w-[300px]">
+            <div className="h-[150px] bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="p">
@@ -123,6 +143,45 @@ const ServiceTable = () => {
           {error}
         </div>
       )}
+
+      <div className="flex space-x-4 mb-6">
+        <button
+          className={`px-4 py-2 rounded-md ${
+            activeTab === "published"
+              ? "bg-secondary text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+          onClick={() => setActiveTab("published")}
+          disabled={isFetching}
+        >
+          {activeTab === "published" && isFetching ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+              Loading...
+            </div>
+          ) : (
+            "Published Skills"
+          )}
+        </button>
+        <button
+          className={`px-4 py-2 rounded-md ${
+            activeTab === "unpublished"
+              ? "bg-secondary text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+          onClick={() => setActiveTab("unpublished")}
+          disabled={isFetching}
+        >
+          {activeTab === "unpublished" && isFetching ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+              Loading...
+            </div>
+          ) : (
+            "Unpublished Skills"
+          )}
+        </button>
+      </div>
 
       <div className="lg:flex justify-between lg:space-x-5 space-y-4 lg:space-y-0 items-center mb-6">
         <input
@@ -152,18 +211,30 @@ const ServiceTable = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredServices.length > 0 ? (
+            {isFetching ? (
+              <tr>
+                <td colSpan="3">
+                  <TableLoader />
+                </td>
+              </tr>
+            ) : filteredServices.length > 0 ? (
               filteredServices.map((service, index) => (
                 <tr key={index} className="hover:bg-secondary hover:text-white transition-all duration-300">
-                  <td className="px-6 py-4">{service.title}</td>
-                  <td className="px-6 py-4">{service.description}</td>
+                  <td className="px-6 py-4">{service.skill_type }</td>
+                  <td className="px-6 py-4">{service.description || 'No description'}</td>
                   <td className="px-6 py-4 w-[300px]">
-                    {service.thumbnail && (
+                    {service.photourl
+ ? (
                       <img 
-                        src={` https://${service.thumbnail}`} 
-                        alt={service.title}
+                        src={`https://${service.photourl
+}`} 
+                        alt={service.title || 'Skill thumbnail'}
                         className="h-[150px] w-[100%] object-cover rounded"
                       />
+                    ) : (
+                      <div className="h-[150px] w-full bg-gray-200 rounded flex items-center justify-center text-gray-500">
+                        No image
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -171,7 +242,7 @@ const ServiceTable = () => {
             ) : (
               <tr>
                 <td colSpan="3" className="px-6 py-4 text-center text-gray-500 italic">
-                  No skills found
+                  No {activeTab} skills found
                 </td>
               </tr>
             )}
