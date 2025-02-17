@@ -13,8 +13,8 @@ const ServiceTable = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Fetch skills based on active tab
   const fetchSkills = async () => {
     setIsFetching(true);
     try {
@@ -35,30 +35,73 @@ const ServiceTable = () => {
         }
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
       console.log('API Response:', data);
       
       if (data.status === 'success') {
         const processedData = (data.data || []).map(item => ({
-          title: item?.title || '',
-          description: item?.description || '',
-          thumbnail: item?.thumbnail || null,
+          id: item.id,
+          title: item.skill_type || '',
+          description: item.description || '',
+          thumbnail: item.thumbnail || null,
+          status: activeTab,
+          created_at: item.created_at,
+          updated_at: item.updated_at
         }));
         setServices(processedData);
       } else {
-        setError('Failed to fetch skills');
+        setError(`Failed to fetch ${activeTab} skills`);
       }
     } catch (err) {
-      console.error('Error fetching skills:', err);
-      setError('Failed to load skills. Please try again.');
+      console.error(`Error fetching ${activeTab} skills:`, err);
+      setError(`Failed to load ${activeTab} skills. Please try again.`);
     } finally {
       setIsFetching(false);
     }
   };
 
-  useEffect(() => {
-    fetchSkills();
-  }, [activeTab]);
+  const handleStatusChange = async (id, newStatus) => {
+    setIsUpdating(true);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        throw new Error('No access token found');
+      }
+
+      const endpoint = newStatus === 'published'
+        ? `https://testapi.humanserve.net/api/admin/skills/publish/${id}`
+        : `https://testapi.humanserve.net/api/admin/skills/unpublish/${id}`;
+
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        await fetchSkills();
+      } else {
+        setError(`Failed to ${newStatus === 'published' ? 'publish' : 'unpublish'} skill`);
+      }
+    } catch (err) {
+      console.error(`Error updating skill status:`, err);
+      setError(`Failed to update skill status. Please try again.`);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const handleAddSkill = async () => {
     setIsLoading(true);
@@ -85,6 +128,10 @@ const ServiceTable = () => {
         body: formDataObj
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.status === 'success') {
@@ -102,12 +149,22 @@ const ServiceTable = () => {
     }
   };
 
+  useEffect(() => {
+    fetchSkills();
+  }, [activeTab]);
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setFormData(prev => ({
       ...prev,
       thumbnail: file
     }));
+  };
+
+  const getStatusBadgeClass = (status) => {
+    return status === 'published' 
+      ? 'bg-green-100 text-green-800 border-green-200'
+      : 'bg-yellow-100 text-yellow-800 border-yellow-200';
   };
 
   const filteredServices = services.filter(service =>
@@ -201,33 +258,38 @@ const ServiceTable = () => {
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-lg  overflow-x-scroll">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-secondary">
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-100">Title</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-100">Description</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-100">Status</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-100">Thumbnail</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-100">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {isFetching ? (
               <tr>
-                <td colSpan="3">
+                <td colSpan="5">
                   <TableLoader />
                 </td>
               </tr>
             ) : filteredServices.length > 0 ? (
-              filteredServices.map((service, index) => (
-                <tr key={index} className="hover:bg-secondary hover:text-white transition-all duration-300">
-                  <td className="px-6 py-4">{service.skill_type }</td>
+              filteredServices.map((service) => (
+                <tr key={service.id} className="hover:bg-secondary hover:text-white transition-all duration-300">
+                  <td className="px-6 py-4">{service.title}</td>
                   <td className="px-6 py-4">{service.description || 'No description'}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusBadgeClass(service.status)}`}>
+                      {service.status}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 w-[300px]">
-                    {service.photourl
- ? (
+                    {service.thumbnail ? (
                       <img 
-                        src={`https://${service.photourl
-}`} 
+                        src={`https://${service.thumbnail}`} 
                         alt={service.title || 'Skill thumbnail'}
                         className="h-[150px] w-[100%] object-cover rounded"
                       />
@@ -237,11 +299,36 @@ const ServiceTable = () => {
                       </div>
                     )}
                   </td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => handleStatusChange(
+                        service.id,
+                        service.status === 'published' ? 'unpublished' : 'published'
+                      )}
+                      disabled={isUpdating}
+                      className={`px-4 py-2 rounded-md text-white ${
+                        service.status === 'published'
+                          ? 'bg-yellow-500 hover:bg-yellow-600'
+                          : 'bg-green-500 hover:bg-green-600'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {isUpdating ? (
+                        <div className="flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                          Updating...
+                        </div>
+                      ) : service.status === 'published' ? (
+                        'Unpublish'
+                      ) : (
+                        'Publish'
+                      )}
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="3" className="px-6 py-4 text-center text-gray-500 italic">
+                <td colSpan="5" className="px-6 py-4 text-center text-gray-500 italic">
                   No {activeTab} skills found
                 </td>
               </tr>
@@ -321,3 +408,24 @@ const ServiceTable = () => {
 };
 
 export default ServiceTable;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
