@@ -47,7 +47,7 @@ const ServiceTable = () => {
       if (data.status === "success") {
         const processedData = (data.data || []).map((item) => ({
           id: item._id,
-          title: item.skill_type || "",
+          title: item.title || "",
           description: item.description || "",
           thumbnail: item.thumbnail || null,
           status: activeTab,
