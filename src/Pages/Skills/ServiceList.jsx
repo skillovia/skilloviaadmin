@@ -46,7 +46,7 @@ const ServiceTable = () => {
 
       if (data.status === "success") {
         const processedData = (data.data || []).map((item) => ({
-          id: item.id,
+          id: item._id,
           title: item.skill_type || "",
           description: item.description || "",
           thumbnail: item.thumbnail || null,
@@ -323,7 +323,7 @@ const ServiceTable = () => {
                   <td className="px-6 py-4 w-[300px]">
                     {service.thumbnail ? (
                       <img
-                        src={`https://${service.thumbnail}`}
+                        src={service.thumbnail}
                         alt={service.title || "Skill thumbnail"}
                         className="h-[150px] w-[100%] object-cover rounded"
                       />
