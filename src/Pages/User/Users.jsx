@@ -64,7 +64,7 @@ const UserTable = () => {
           gender: user.gender || "Not provided",
           email: user.email,
           phoneNumber: user.phone || "Not provided",
-          state: user.location || "Not provided",
+          state: user.locationName || "Not provided",
           address: user.street || "Not provided",
           skills: ["Not provided"],
           verified: user.is_email_verified === 1,
