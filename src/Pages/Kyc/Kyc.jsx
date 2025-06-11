@@ -7,6 +7,7 @@ const KycList = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState(null);
+const recordKey = r._id; // always use string _id for consistency
 
   useEffect(() => {
     fetchRecords();
@@ -155,8 +156,8 @@ const KycList = () => {
                           ? "bg-blue-500 text-white cursor-not-allowed"
                           : "bg-green-500 text-white hover:bg-green-600 hover:shadow-md"
                       }`}
-                      onClick={() => approveKyc(r.userId || r.user_id || r._id)}
-                      disabled={r.approval_status === "approved" || approvingId === (r.userId || r.user_id || r._id)}
+                   onClick={() => approveKyc(recordKey)}
+disabled={r.approval_status === "approved" || approvingId === recordKey}
                     >
                       {approvingId === (r.userId || r.user_id || r._id) ? (
                         <div className="flex items-center">
