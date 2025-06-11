@@ -10,6 +10,7 @@ import Skills from "./Pages/Skills/Skills";
 import Users from "./Pages/User/Users";
 import Dashboard from "./Pages/Dashboard/Dashboard";
 import UserDetils from "./Pages/User/UserDetils";
+import KycList from "./Pages/Kyc/Kyc";
 
 
 
@@ -59,6 +60,11 @@ const router = createBrowserRouter([
   {
     path: "/user/:id",
     element: <UserDetils/>,
+  },
+
+  {
+    path: "/kyc",
+    element: <KycList/>,
   },
 
  

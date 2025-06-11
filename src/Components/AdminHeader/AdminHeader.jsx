@@ -40,7 +40,11 @@ const AdminHeader = () => {
           <a href="/bookings" className="hover:text-primary">
             Bookings
           </a>
-          <a href="/reports" className="hover:text-primary">
+
+          <a href="/Kyc" className="hover:text-primary">
+          Approve Kyc
+          </a>
+          <a href="#" className="hover:text-primary">
             Communities
           </a>
         </nav>
