@@ -3,28 +3,24 @@ import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
   XCircle,
-  MoreVertical,
-  Edit,
-  Trash,
-  Mail,
+  Loader,
   UserPlus,
   Search,
   Filter,
   ChevronDown,
-  Loader,
   X,
 } from "lucide-react";
-import { LuView } from "react-icons/lu";
 import Layout from "../../Components/Layout/Layout";
 
 const UserTable = () => {
-  const [openDropdownId, setOpenDropdownId] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [createUserError, setCreateUserError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [approveKycError, setApproveKycError] = useState(null);
+  const [approveKycLoadingId, setApproveKycLoadingId] = useState(null);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -42,7 +38,7 @@ const UserTable = () => {
 
   const fetchUsers = async () => {
     const accessToken = localStorage.getItem("accessToken");
-
+    console.log(accessToken);
     try {
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}/admin/users/get/all`,
@@ -56,6 +52,7 @@ const UserTable = () => {
 
       if (!response.ok) throw new Error("Failed to fetch users");
       const responseData = await response.json();
+      console.log(responseData);
 
       if (responseData.status === "success" && responseData.data) {
         const transformedUsers = responseData.data.map((user) => ({
@@ -67,7 +64,7 @@ const UserTable = () => {
           state: user.location || "Not provided",
           address: user.street || "Not provided",
           skills: ["Not provided"],
-          verified: user.is_email_verified === 1,
+          verified: user.is_email_verified === true,
           photoUrl: user.photourl || "",
           bio: user.bio || "Not provided",
           createdAt: new Date(user.created_at).toLocaleDateString(),
@@ -131,30 +128,6 @@ const UserTable = () => {
       setCreateUserError(err.message);
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleAction = (action, user) => {
-    setOpenDropdownId(null);
-
-    switch (action) {
-      case "view":
-        navigate(`/user/${user.id}`);
-        break;
-      case "edit":
-        console.log("Edit user:", user);
-        break;
-      case "delete":
-        console.log("Delete user:", user);
-        break;
-      case "email":
-        console.log("Email user:", user);
-        break;
-      case "promote":
-        console.log("Promote user:", user);
-        break;
-      default:
-        break;
     }
   };
 
@@ -374,9 +347,7 @@ const UserTable = () => {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+              
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -410,54 +381,7 @@ const UserTable = () => {
                       <XCircle className="inline-block w-5 h-5 text-red-500" />
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center relative">
-                    <button
-                      onClick={() =>
-                        setOpenDropdownId(
-                          openDropdownId === user.id ? null : user.id
-                        )
-                      }
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
-                    {openDropdownId === user.id && (
-                      <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                        <div className="py-1" role="menu">
-                          <button
-                            onClick={() => handleAction("view", user)}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                          >
-                            <LuView className="w-4 h-4 mr-2" /> View User
-                          </button>
-                          <button
-                            onClick={() => handleAction("edit", user)}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                          >
-                            <Edit className="w-4 h-4 mr-2" /> Edit User
-                          </button>
-                          <button
-                            onClick={() => handleAction("email", user)}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                          >
-                            <Mail className="w-4 h-4 mr-2" /> Send Email
-                          </button>
-                          <button
-                            onClick={() => handleAction("promote", user)}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                          >
-                            <UserPlus className="w-4 h-4 mr-2" /> Promote
-                          </button>
-                          <button
-                            onClick={() => handleAction("delete", user)}
-                            className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
-                          >
-                            <Trash className="w-4 h-4 mr-2" /> Delete
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </td>
+             
                 </tr>
               ))}
             </tbody>
