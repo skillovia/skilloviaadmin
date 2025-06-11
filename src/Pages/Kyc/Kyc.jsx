@@ -109,7 +109,7 @@ const recordKey = r._id; // always use string _id for consistency
                 <tr key={r._id} className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
                   <td className="px-4 py-3 border-b">
                     <span className="text-sm font-mono text-gray-600">
-                      {r.userId || 'Not Assigned'}
+  {typeof r.userId === "object" && r.userId !== null ? r.userId._id || r.userId.email : r.userId || 'Not Assigned'}
                     </span>
                   </td>
                   <td className="px-4 py-3 border-b">{r.kyc_method}</td>
